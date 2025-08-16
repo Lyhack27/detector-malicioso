@@ -1,0 +1,275 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "curlImport": "",
+        "httpVariantWarning": "",
+        "method": "POST",
+        "url": "https://www.virustotal.com/api/v3/files",
+        "": "",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "virusTotalApi",
+        "provideSslCertificates": false,
+        "sendQuery": false,
+        "sendHeaders": false,
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "attachment_0"
+            }
+          ]
+        },
+        "options": {},
+        "infoMessage": ""
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        816,
+        16
+      ],
+      "id": "42d23d8e-5eea-4981-9c20-bb3b8c925e7e",
+      "name": "VirusTotal HTTP Request",
+      "extendsCredential": "virusTotalApi",
+      "credentials": {
+        "virusTotalApi": {
+          "id": "{{VIRUSTOTAL_CRED_ID}}",
+          "name": "VirusTotal account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {},
+        "options": {
+          "downloadAttachments": true
+        }
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        400,
+        48
+      ],
+      "id": "7b79f3cf-37ca-4672-b6e2-0575fe8b7a25",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "{{GMAIL_CRED_ID}}",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d9580bfa-bd78-48ce-a665-7241493bde2e",
+              "leftValue": "={{ $json.headers['delivered-to'] }}",
+              "rightValue": "Delivered-To: {{YOUR_EMAIL}}",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        608,
+        16
+      ],
+      "id": "aebf9341-71bd-4307-a35f-e4466857a4bb",
+      "name": "If"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        832,
+        224
+      ],
+      "id": "64117d89-62dd-4d94-81f1-c2027f661acf",
+      "name": "Wait",
+      "webhookId": "{{WAIT_WEBHOOK_ID}}"
+    },
+    {
+      "parameters": {
+        "curlImport": "",
+        "httpVariantWarning": "",
+        "method": "GET",
+        "url": "=https://www.virustotal.com/api/v3/analyses/{{ $json.data.id }}",
+        "": "",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "virusTotalApi",
+        "provideSslCertificates": false,
+        "sendQuery": false,
+        "sendHeaders": false,
+        "sendBody": false,
+        "options": {},
+        "infoMessage": ""
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        816,
+        -112
+      ],
+      "id": "feb98df2-0dff-4eb3-9223-e9d89d396637",
+      "name": "VirusTotal HTTP Request1",
+      "extendsCredential": "virusTotalApi",
+      "credentials": {
+        "virusTotalApi": {
+          "id": "{{VIRUSTOTAL_CRED_ID}}",
+          "name": "VirusTotal account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a5d504c7-06b2-4ed8-b4d0-90b4e8d37619",
+              "name": "data.attributes.stats.malicious",
+              "value": "={{ $json.data.attributes.stats.malicious }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        816,
+        -288
+      ],
+      "id": "42ce26e6-ac30-4b76-9a2c-0663c4bd1de7",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "chatId": "={{YOUR_TELEGRAM_CHAT_ID}}",
+        "text": "=The result of your last email attachment contains={{ $json.data.attributes.stats.malicious }} malicious content.",
+        "replyMarkup": "forceReply",
+        "forceReply": {},
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1184,
+        32
+      ],
+      "id": "cb2e7e16-95ab-4401-a4ef-aecd199edb1b",
+      "name": "Send a text message",
+      "webhookId": "{{TELEGRAM_WEBHOOK_ID}}",
+      "credentials": {
+        "telegramApi": {
+          "id": "{{TELEGRAM_CRED_ID}}",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "VirusTotal HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "VirusTotal HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "VirusTotal HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "VirusTotal HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "{{YOUR_INSTANCE_ID}}"
+  }
+}
